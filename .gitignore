@@ -1,0 +1,26 @@
+# Data and model artifacts
+data/
+*.duckdb
+*.pickle
+*.pkl
+*.npy
+data/models/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+.env
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Build/dist
+*.egg-info/
+dist/
+build/
