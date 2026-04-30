@@ -1,0 +1,17 @@
+column_name	column_type	null	key	default	extra
+f0	DOUBLE	YES			
+f1	DOUBLE	YES			
+f2	DOUBLE	YES			
+f3	DOUBLE	YES			
+f4	DOUBLE	YES			
+f5	DOUBLE	YES			
+f6	DOUBLE	YES			
+f7	DOUBLE	YES			
+f8	DOUBLE	YES			
+f9	DOUBLE	YES			
+f10	DOUBLE	YES			
+f11	DOUBLE	YES			
+treatment	BIGINT	YES			
+conversion	BIGINT	YES			
+visit	BIGINT	YES			
+exposure	BIGINT	YES			
