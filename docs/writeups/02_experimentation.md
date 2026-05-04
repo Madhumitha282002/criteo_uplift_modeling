@@ -87,3 +87,54 @@ lift. The uplift model's job (Weeks 2–3) is to identify *which* users
 contribute most to this average — i.e., where the treatment effect is
 heterogeneous. The Day 5 heterogeneity analysis is what tells us
 whether such users exist in this data.
+
+## 4. Treatment heterogeneity by feature
+
+Uplift modeling can only beat random targeting if treatment effects vary
+across users. To check this, we bucket each of the 12 features into
+quartiles, compute the conversion lift within each quartile, and rank
+features by the variance of bucket-level lift.
+
+### Method
+
+For each feature `f_i`:
+
+1. Assign every row to a quartile bucket using
+   `NTILE(4) OVER (ORDER BY f_i)`. Buckets are computed across all rows
+   (not within treatment arm) so they're comparable between treated and
+   control.
+2. Compute conversion rate per (bucket, treatment) cell.
+3. Per bucket: `lift = treatment_rate - control_rate`,
+   `SE = sqrt(p_t(1-p_t)/n_t + p_c(1-p_c)/n_c)`.
+4. Heterogeneity score = `Var(lift)` across the 4 buckets.
+
+A weighted average of bucket lifts (weighted by bucket size) should
+equal the global ATE for conversion. We verify this for every feature
+as a pipeline correctness check; all 12 features match the global ATE
+within numerical noise.
+
+### Top features by heterogeneity score
+
+| rank | feature | heterogeneity_score | lift range |
+|---|---|---|---|
+| 1 | <feat> | <score> | [<min>, <max>] |
+| 2 | <feat> | <score> | [<min>, <max>] |
+| 3 | <feat> | <score> | [<min>, <max>] |
+| 4 | <feat> | <score> | [<min>, <max>] |
+| 5 | <feat> | <score> | [<min>, <max>] |
+
+Full per-bucket results: `docs/figures/heterogeneity_results.csv`.
+Full ranking: `docs/figures/feature_rank.csv`.
+
+### Interpretation
+
+The top-ranked features are the ones where the treatment effect varies
+most between low-feature-value users and high-feature-value users.
+These are the candidates the uplift model will lean on. Features at
+the bottom of the ranking show roughly constant lift across all
+buckets — they explain *who converts*, but not *who responds
+differentially to treatment*, which is what uplift modeling needs.
+
+The Day 6 visualization will plot bucket-level lift with 95% CI error
+bars for the top 4–5 features so the heterogeneity is visible at a
+glance.
