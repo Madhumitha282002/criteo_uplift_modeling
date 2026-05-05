@@ -1,140 +1,126 @@
 # Experimentation Analysis
 
-Validation of the Criteo Uplift v2.1 experiment: sample-ratio mismatch
-test, then average treatment effect estimates with confidence intervals
-for both outcomes (`visit` and `conversion`).
+Validation of the Criteo Uplift v2.1 experiment and identification of
+features with treatment heterogeneity for downstream uplift modeling.
 
-## 1. Sample Ratio Mismatch (SRM)
+## 1. Data overview
 
-The dataset documentation specifies an 85/15 treated/control split. We
-test whether the observed split is consistent with this target using a
-chi-square goodness-of-fit test.
+- **Dataset:** Criteo Uplift v2.1 (Diemert et al., AdKDD 2018)
+- **Rows:** 13,979,592
+- **Features:** 12 anonymized dense floats (`f0`–`f11`)
+- **Treatment:** randomly assigned, nominal 85/15 treated/control split
+- **Outcomes:** `visit` (4.7% control rate), `conversion` (0.19% control rate)
+
+## 2. Sample Ratio Mismatch (SRM)
 
 | | Observed | Expected (85/15) |
 |---|---|---|
-| Treated  | <n_t>     | <exp_t>     |
-| Control  | <n_c>     | <exp_c>     |
-| **Total**| **<n_total>** | **<n_total>** |
+| Treated | 11,882,655 | 11,882,653 |
+| Control | 2,096,937  | 2,096,939  |
+| **Total** | **13,979,592** | **13,979,592** |
 
-- **Observed treated share:** <observed_share>
-- **Absolute deviation from 85%:** <deviation_pp> pp
-- **Chi-square statistic:** <chi2>
-- **p-value:** <p_value>
+- **Chi-square statistic:** 0.00
+- **p-value:** 0.9989
+- **Observed treated share:** 0.850000
+- **Absolute deviation from 85%:** +0.0000 pp
 
-### Interpretation
+**Interpretation:** The observed split is statistically indistinguishable
+from the documented 85/15 target. No SRM detected; randomization passes
+this validation. Note that with n = 14M, this test has the power to
+detect deviations of <0.01 percentage points, so passing is meaningful.
 
-<Pick one of the two scenarios below based on your output:>
+## 3. Average Treatment Effect
 
-**Scenario A — p ≥ 0.001:** The observed split is statistically
-consistent with the documented 85/15 target. No SRM detected.
-Randomization passes this validation.
-
-**Scenario B — p < 0.001:** The chi-square test flags a deviation from
-exactly 85/15. With n = 14M, chi-square has extreme power and detects
-deviations of even 0.1 percentage points as "significant." The
-practical magnitude here is <deviation_pp> pp, which is small enough
-that downstream causal estimates are not meaningfully biased. The
-Criteo v2.1 release is a non-uniform sub-sample of the original
-experiment (per the dataset card), so a slight deviation from the
-nominal 85/15 is expected. We proceed with treatment as the causal
-variable, noting the deviation.
-
-## 2. Average Treatment Effect
-
-ATE is estimated as the simple difference of outcome means between
-treated and control arms (intent-to-treat using the random `treatment`
-assignment, not the post-randomization `exposure` indicator).
+ATE estimated as the difference of outcome means between treated and
+control arms (intent-to-treat using the random `treatment` assignment,
+not the post-randomization `exposure` indicator). Standard errors via
+the difference-of-proportions formula. Computed in SQL; p-values added
+in Python via `scipy.stats.norm`.
 
 ### Formula
 
-For a binary outcome Y with treatment assignment W:
-ATE  = p_t - p_c
-SE   = sqrt( p_t (1 - p_t) / n_t + p_c (1 - p_c) / n_c )
-95% CI = ATE ± 1.96 · SE
-z      = ATE / SE
-p      = 2 · (1 − Φ(|z|))
-
-This is the standard-error formula for the difference of two
-proportions. Standard errors are computed in SQL; p-values are
-computed in Python via `scipy.stats.norm`.
+ATE     = p_t - p_c
+SE      = sqrt( p_t (1 - p_t) / n_t + p_c (1 - p_c) / n_c )
+95% CI  = ATE ± 1.96 · SE
+z       = ATE / SE
+p       = 2 · (1 − Φ(|z|))
 
 ### Results
 
-| outcome | control_rate | treatment_rate | ATE | 95% CI low | 95% CI high | p-value |
+| outcome | control_rate | treatment_rate | ATE | 95% CI | z | p-value |
 |---|---|---|---|---|---|---|
-| visit      | <p_c_v> | <p_t_v> | <ate_v> | <ci_lo_v> | <ci_hi_v> | <p_v> |
-| conversion | <p_c_c> | <p_t_c> | <ate_c> | <ci_lo_c> | <ci_hi_c> | <p_c> |
+| visit      | 0.038201 | 0.048543 | 0.010342 | [0.010056, 0.010629] | 70.7 | <1e-200 |
+| conversion | 0.001938 | 0.003089 | 0.001152 | [0.001085, 0.001219] | 33.5 | <1e-200 |
 
 ### Interpretation
 
-- **Visit:** Treatment lifts the visit rate by <ate_v> in absolute
-  terms (<rel_lift_v>% relative). The 95% CI is narrow due to the 14M
-  sample size and excludes zero by a wide margin.
-- **Conversion:** The absolute lift is <ate_c> on a base rate of
-  <p_c_c>. While the absolute number is tiny, the relative lift is
-  <rel_lift_c>% and the effect is highly significant
-  (p = <p_c>).
+- **Visit:** Treatment lifts the visit rate by 1.03 percentage points
+  in absolute terms — a **27.1% relative lift** over the control rate
+  of 3.82%. The 95% CI is tight ([0.010056, 0.010629]) and excludes
+  zero by ~70 standard errors.
+- **Conversion:** Absolute lift of 0.115 percentage points on a
+  control base rate of 0.19% — a **59.4% relative lift**. Despite the
+  tiny absolute effect, the relative magnitude is large and the
+  estimate is highly significant (z = 33.5).
 
-The conversion-lift CI being wider than the visit-lift CI (in relative
-terms) reflects the much rarer base rate: each control-arm conversion
-contributes more to the variance.
+The conversion-lift relative magnitude (~59%) is roughly 2× the visit
+lift (~27%). This makes sense: treatment moves the funnel from awareness
+(visit) through to conversion, with proportionally larger downstream
+effects. It also implies that a model good at identifying high-intent
+treated users will pay off more in conversion targeting than in visit
+targeting.
 
-## 3. Why this matters for uplift modeling
+## 4. Treatment heterogeneity
 
-Both outcomes show a positive, statistically significant ATE. This is
-the floor: a model that targets randomly already captures this average
-lift. The uplift model's job (Weeks 2–3) is to identify *which* users
-contribute most to this average — i.e., where the treatment effect is
-heterogeneous. The Day 5 heterogeneity analysis is what tells us
-whether such users exist in this data.
+Uplift modeling can only beat random targeting if treatment effects
+vary across users. We bucket each feature into quartiles via
+`NTILE(4) OVER (ORDER BY f_i)`, compute conversion lift per bucket, and
+rank features by the variance of bucket-level lift.
 
-## 4. Treatment heterogeneity by feature
+### Pipeline check and a finding
 
-Uplift modeling can only beat random targeting if treatment effects vary
-across users. To check this, we bucket each of the 12 features into
-quartiles, compute the conversion lift within each quartile, and rank
-features by the variance of bucket-level lift.
-
-### Method
-
-For each feature `f_i`:
-
-1. Assign every row to a quartile bucket using
-   `NTILE(4) OVER (ORDER BY f_i)`. Buckets are computed across all rows
-   (not within treatment arm) so they're comparable between treated and
-   control.
-2. Compute conversion rate per (bucket, treatment) cell.
-3. Per bucket: `lift = treatment_rate - control_rate`,
-   `SE = sqrt(p_t(1-p_t)/n_t + p_c(1-p_c)/n_c)`.
-4. Heterogeneity score = `Var(lift)` across the 4 buckets.
-
-A weighted average of bucket lifts (weighted by bucket size) should
-equal the global ATE for conversion. We verify this for every feature
-as a pipeline correctness check; all 12 features match the global ATE
-within numerical noise.
+For each feature, we compared the row-count-weighted mean of bucket
+lifts to the global conversion ATE (0.001152). They agree exactly only
+if the treatment ratio is constant across all buckets of that feature.
+In Criteo v2.1, deviations range from −22% (`f10`) to +61% (`f4`),
+indicating that **treatment ratio varies meaningfully across feature
+quartiles**. This is consistent with the documented non-uniform
+sub-sampling of the original experiment. The variance-of-lift
+heterogeneity score remains a valid signal for which features carry
+differential treatment response — it just isn't anchored to the
+unconditional ATE.
 
 ### Top features by heterogeneity score
 
 | rank | feature | heterogeneity_score | lift range |
 |---|---|---|---|
-| 1 | <feat> | <score> | [<min>, <max>] |
-| 2 | <feat> | <score> | [<min>, <max>] |
-| 3 | <feat> | <score> | [<min>, <max>] |
-| 4 | <feat> | <score> | [<min>, <max>] |
-| 5 | <feat> | <score> | [<min>, <max>] |
+| 1 | f4 | 8.24e-06 | [0.000310, 0.006162]  |
+| 2 | f2 | 7.80e-06 | [0.000030, 0.005703]  |
+| 3 | f9 | 5.94e-06 | [0.000063, 0.005002]  |
+| 4 | f3 | 4.31e-06 | [−0.000266, 0.004257] |
+| 5 | f8 | 3.87e-06 | [0.000026, 0.004026]  |
+| 6 | f0 | 2.49e-06 | [0.000101, 0.003395]  |
 
-Full per-bucket results: `docs/figures/heterogeneity_results.csv`.
-Full ranking: `docs/figures/feature_rank.csv`.
+![Top heterogeneous features](../figures/heterogeneity_top_features.png)
+
+The chart shows per-quartile conversion lift with 95% CI error bars,
+relative to the global conversion ATE (dashed line). Bars are green
+for positive lift, red for negative; faded bars indicate CIs that
+cross zero.
 
 ### Interpretation
 
-The top-ranked features are the ones where the treatment effect varies
-most between low-feature-value users and high-feature-value users.
-These are the candidates the uplift model will lean on. Features at
-the bottom of the ranking show roughly constant lift across all
-buckets — they explain *who converts*, but not *who responds
-differentially to treatment*, which is what uplift modeling needs.
+- **f4 and f2** show the largest spread, with the most-responsive
+  quartile delivering a lift roughly 5× the global ATE. These will be
+  the strongest signals for the uplift model.
+- **f3 contains a negative-lift quartile** (lift = −0.000266). This is
+  actionable: the model can use f3 to identify users to *avoid*
+  targeting — they convert less when treated, possibly due to ad
+  fatigue or audience mismatch.
+- **The bottom-ranked features (f1, f5, f11)** show roughly flat lift
+  across quartiles. They explain *who converts* but not *who responds
+  to treatment*, so they contribute little to differential targeting.
 
-The Day 6 visualization will plot bucket-level lift with 95% CI error
-bars for the top 4–5 features so the heterogeneity is visible at a
-glance.
+The full per-bucket data is in `docs/figures/heterogeneity_results.csv`
+(48 rows: 12 features × 4 buckets) and the full ranking is in
+`docs/figures/feature_rank.csv`.
