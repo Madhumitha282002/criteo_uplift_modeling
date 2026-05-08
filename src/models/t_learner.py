@@ -9,8 +9,6 @@ conditional average treatment effect (CATE):
 The base model is pluggable — any sklearn-compatible classifier with
 ``fit`` and ``predict_proba`` will work. Day 10 uses LogisticRegression;
 Day 14 swaps in LightGBM with no changes to this module.
-
-Skeletons only on Day 9. Implementation arrives on Day 10.
 """
 
 from __future__ import annotations
@@ -59,7 +57,29 @@ def fit_t_learner(
             if ``w`` contains values other than {0, 1}, or if either
             treatment arm has zero rows.
     """
-    raise NotImplementedError("Implementation arrives Day 10.")
+    if not (len(X) == len(y) == len(w)):
+        raise ValueError(
+            f"Length mismatch: X={len(X)}, y={len(y)}, w={len(w)}"
+        )
+    unique_w = set(np.unique(w).tolist())
+    if not unique_w.issubset({0, 1}):
+        raise ValueError(f"w must be in {{0, 1}}, got {unique_w}")
+
+    treated_mask = w == 1
+    control_mask = w == 0
+    if treated_mask.sum() == 0 or control_mask.sum() == 0:
+        raise ValueError(
+            f"Both arms must have rows: n_treated={int(treated_mask.sum())}, "
+            f"n_control={int(control_mask.sum())}"
+        )
+
+    model_t = base_model_class(**model_kwargs)
+    model_c = base_model_class(**model_kwargs)
+
+    model_t.fit(X[treated_mask], y[treated_mask])
+    model_c.fit(X[control_mask], y[control_mask])
+
+    return model_t, model_c
 
 
 def predict_uplift(
@@ -85,7 +105,8 @@ def predict_uplift(
         Values can be negative — a negative τ̂ means treatment hurts
         that user's predicted outcome rate.
     """
-    raise NotImplementedError("Implementation arrives Day 10.")
+    p_t, p_c = predict_outcomes(model_t, model_c, X)
+    return p_t - p_c
 
 
 def predict_outcomes(
@@ -112,4 +133,32 @@ def predict_outcomes(
         treated-arm model's prediction P̂(Y=1|x_i, W=1);
         ``p_control[i]`` is the control-arm equivalent.
     """
-    raise NotImplementedError("Implementation arrives Day 10.")
+    p_t = _predict_positive_proba(model_t, X)
+    p_c = _predict_positive_proba(model_c, X)
+    return p_t, p_c
+
+
+def _predict_positive_proba(model: Any, X: np.ndarray) -> np.ndarray:
+    """Return P(Y=1|X) from a fitted classifier.
+
+    Locates the positive class column robustly via ``model.classes_``
+    rather than assuming column 1, which guards against the edge case
+    where a fold has only negatives during fit (degenerate but possible
+    on rare-event data).
+
+    Args:
+        model: Fitted classifier with ``predict_proba`` and ``classes_``.
+        X: Feature matrix of shape ``(n, d)``.
+
+    Returns:
+        Array of shape ``(n,)`` with P(Y=1|x_i), dtype ``float64``.
+        If the model never saw a positive label during fit, returns
+        all zeros (the most-honest fallback).
+    """
+    proba = model.predict_proba(X)
+    classes = list(model.classes_)
+    if 1 not in classes:
+        # Pathological case: model never saw a positive. Predict 0 for all.
+        return np.zeros(X.shape[0], dtype="float64")
+    pos_idx = classes.index(1)
+    return proba[:, pos_idx].astype("float64")

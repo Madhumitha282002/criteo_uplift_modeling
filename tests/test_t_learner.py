@@ -1,9 +1,4 @@
-"""Shape and contract tests for the T-learner module.
-
-Day 9: the implementations raise NotImplementedError. The shape test
-is marked xfail today; it will pass automatically on Day 10 once the
-real implementation lands.
-"""
+"""Shape and contract tests for the T-learner module."""
 
 from __future__ import annotations
 
@@ -11,7 +6,11 @@ import numpy as np
 import pytest
 from sklearn.linear_model import LogisticRegression
 
-from src.models.t_learner import fit_t_learner, predict_uplift, predict_outcomes
+from src.models.t_learner import (
+    fit_t_learner,
+    predict_outcomes,
+    predict_uplift,
+)
 
 
 @pytest.fixture
@@ -29,19 +28,8 @@ def dummy_data():
     return X, y, w
 
 
-@pytest.mark.xfail(
-    reason="Day 9: skeletons raise NotImplementedError. Will pass Day 10.",
-    raises=NotImplementedError,
-    strict=True,
-)
 def test_t_learner_shapes(dummy_data):
-    """Output shapes match the documented contract.
-
-    On Day 10 once fit_t_learner is implemented, this test should pass
-    without modification. The strict=True ensures the test fails loudly
-    if it starts unexpectedly succeeding (which is the signal that we
-    can flip xfail off).
-    """
+    """Output shapes and contracts match the documented behavior."""
     X, y, w = dummy_data
 
     m_t, m_c = fit_t_learner(
@@ -66,3 +54,40 @@ def test_t_learner_shapes(dummy_data):
 
     # Identity contract: uplift == p_t - p_c (within float tolerance)
     np.testing.assert_allclose(uplift, p_t - p_c, atol=1e-12)
+
+
+def test_t_learner_validates_inputs():
+    """Bad inputs raise ValueError, not silent garbage."""
+    X = np.zeros((10, 3))
+    y = np.zeros(10)
+    w = np.zeros(10)
+
+    # Length mismatch
+    with pytest.raises(ValueError, match="Length mismatch"):
+        fit_t_learner(X, y[:5], w, LogisticRegression)
+
+    # Bad treatment values (not in {0, 1})
+    with pytest.raises(ValueError, match=r"w must be"):
+        fit_t_learner(X, y, np.full(10, 2), LogisticRegression)
+
+    # Empty arm: all w=0 leaves the treated arm empty
+    with pytest.raises(ValueError, match="Both arms"):
+        fit_t_learner(X, y, np.zeros(10), LogisticRegression)
+
+
+def test_t_learner_with_seeded_models_is_deterministic(dummy_data):
+    """Same data + same seed → identical predictions."""
+    X, y, w = dummy_data
+
+    m_t1, m_c1 = fit_t_learner(
+        X, y, w, base_model_class=LogisticRegression,
+        max_iter=200, random_state=42,
+    )
+    m_t2, m_c2 = fit_t_learner(
+        X, y, w, base_model_class=LogisticRegression,
+        max_iter=200, random_state=42,
+    )
+
+    u1 = predict_uplift(m_t1, m_c1, X)
+    u2 = predict_uplift(m_t2, m_c2, X)
+    np.testing.assert_allclose(u1, u2, atol=1e-12)
