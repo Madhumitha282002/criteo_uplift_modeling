@@ -1,0 +1,54 @@
+{
+  "k_budget": 0.2,
+  "n_test": 400000,
+  "topk_table": [
+    {
+      "k_pct": "10%",
+      "n_targeted": 40000,
+      "incremental_conv": 311.6,
+      "incr_per_1k_targeted": 7.791
+    },
+    {
+      "k_pct": "20%",
+      "n_targeted": 80000,
+      "incremental_conv": 332.9,
+      "incr_per_1k_targeted": 4.161
+    },
+    {
+      "k_pct": "30%",
+      "n_targeted": 120000,
+      "incremental_conv": 359.9,
+      "incr_per_1k_targeted": 2.999
+    },
+    {
+      "k_pct": "50%",
+      "n_targeted": 200000,
+      "incremental_conv": 377.6,
+      "incr_per_1k_targeted": 1.888
+    }
+  ],
+  "strategy_comparison": {
+    "treat_everyone": {
+      "k_pct": 1.0,
+      "cost": 400000.0,
+      "incremental": 392.66666666666663,
+      "incr_per_cost": 0.0009816666666666665
+    },
+    "random_top_20pct": {
+      "k_pct": 0.2,
+      "cost": 80000.0,
+      "incremental": 78.53333333333333,
+      "incr_per_cost": 0.0009816666666666667
+    },
+    "model_top_20pct": {
+      "k_pct": 0.2,
+      "cost": 80000.0,
+      "incremental": 332.86406413384464,
+      "incr_per_cost": 0.004160800801673058
+    }
+  },
+  "headline_metrics": {
+    "model_vs_random_at_top_20pct": 4.2385067589199235,
+    "pct_of_total_uplift_at_20pct_cost": 84.77013517839848
+  }
+}
