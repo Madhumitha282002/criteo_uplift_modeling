@@ -1,0 +1,26 @@
+{
+  "lr": {
+    "model": "LR T-learner",
+    "qini": 161.4254,
+    "incr_top_10": 311.6,
+    "incr_top_20": 332.9,
+    "incr_top_30": 359.9,
+    "incr_top_50": 377.6,
+    "mean_uplift": 0.000918,
+    "uplift_std": 0.005454
+  },
+  "gbm": {
+    "model": "GBM T-learner",
+    "qini": 85.1442,
+    "incr_top_10": 237.8,
+    "incr_top_20": 271.9,
+    "incr_top_30": 296.0,
+    "incr_top_50": 294.6,
+    "mean_uplift": 0.00111,
+    "uplift_std": 0.01372
+  },
+  "gbm_vs_lr": {
+    "qini_ratio": 0.527,
+    "top_20_lift": 0.817
+  }
+}
