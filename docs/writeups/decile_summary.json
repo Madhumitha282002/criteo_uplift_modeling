@@ -1,0 +1,22 @@
+{
+  "lr": {
+    "model": "LR T-learner",
+    "top_decile_lift": 0.00903892394896868,
+    "bottom_decile_lift": 4.05936384694312e-05,
+    "ratio": 222.66848426941058,
+    "top_vs_mean": 9.011862319245637,
+    "sample_mean_lift": 0.001003002889831689,
+    "top_n": 40000,
+    "bottom_n": 40000
+  },
+  "gbm": {
+    "model": "GBM T-learner",
+    "top_decile_lift": 0.006892188049486155,
+    "bottom_decile_lift": 0.0031387533431349347,
+    "ratio": 2.1958361476733157,
+    "top_vs_mean": 6.6992490189954905,
+    "sample_mean_lift": 0.001028800098330961,
+    "top_n": 40000,
+    "bottom_n": 40000
+  }
+}
