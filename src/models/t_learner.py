@@ -58,9 +58,7 @@ def fit_t_learner(
             treatment arm has zero rows.
     """
     if not (len(X) == len(y) == len(w)):
-        raise ValueError(
-            f"Length mismatch: X={len(X)}, y={len(y)}, w={len(w)}"
-        )
+        raise ValueError(f"Length mismatch: X={len(X)}, y={len(y)}, w={len(w)}")
     unique_w = set(np.unique(w).tolist())
     if not unique_w.issubset({0, 1}):
         raise ValueError(f"w must be in {{0, 1}}, got {unique_w}")

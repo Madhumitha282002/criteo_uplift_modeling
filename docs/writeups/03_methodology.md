@@ -183,3 +183,7 @@ and rolling our own forces us to internalize the reweighting term —
 which is the part that distinguishes Qini from a vanilla cumulative-
 gains chart and the part most practitioners get wrong when explaining
 it.
+
+## 5. Limitations
+
+See `docs/writeups/05_limitations.md` for a full discussion of the current pipeline's limitations and possible extensions.

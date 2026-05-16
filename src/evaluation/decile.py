@@ -43,9 +43,7 @@ def compute_decile_profile(
             <one column per feature>.
         Sorted by decile ascending (decile 1 first).
     """
-    feature_avgs = ",\n        ".join(
-        f"AVG({c}) AS mean_{c}" for c in feature_cols
-    )
+    feature_avgs = ",\n        ".join(f"AVG({c}) AS mean_{c}" for c in feature_cols)
 
     query = f"""
     WITH ranked AS (

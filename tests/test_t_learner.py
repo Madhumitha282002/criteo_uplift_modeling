@@ -33,7 +33,9 @@ def test_t_learner_shapes(dummy_data):
     X, y, w = dummy_data
 
     m_t, m_c = fit_t_learner(
-        X, y, w,
+        X,
+        y,
+        w,
         base_model_class=LogisticRegression,
         max_iter=200,
         random_state=42,
@@ -80,12 +82,20 @@ def test_t_learner_with_seeded_models_is_deterministic(dummy_data):
     X, y, w = dummy_data
 
     m_t1, m_c1 = fit_t_learner(
-        X, y, w, base_model_class=LogisticRegression,
-        max_iter=200, random_state=42,
+        X,
+        y,
+        w,
+        base_model_class=LogisticRegression,
+        max_iter=200,
+        random_state=42,
     )
     m_t2, m_c2 = fit_t_learner(
-        X, y, w, base_model_class=LogisticRegression,
-        max_iter=200, random_state=42,
+        X,
+        y,
+        w,
+        base_model_class=LogisticRegression,
+        max_iter=200,
+        random_state=42,
     )
 
     u1 = predict_uplift(m_t1, m_c1, X)

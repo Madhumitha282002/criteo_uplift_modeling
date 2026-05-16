@@ -14,7 +14,7 @@ def _make_criteo_like_data(seed: int, n: int = 100_000):
     rng = np.random.default_rng(seed=seed)
     uplift_pred = rng.uniform(-1, 1, size=n)
     y = (rng.uniform(size=n) < 0.003).astype("int8")  # ~0.3% positive
-    w = (rng.uniform(size=n) < 0.85).astype("int8")   # 85% treatment
+    w = (rng.uniform(size=n) < 0.85).astype("int8")  # 85% treatment
     return uplift_pred, y, w
 
 

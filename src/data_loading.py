@@ -16,19 +16,24 @@ import pickle
 from pathlib import Path
 from typing import Any
 
-
 # Resolve relative to this file's location — works regardless of caller's CWD
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _PROCESSED_DIR = _PROJECT_ROOT / "data" / "processed"
 
 
 _ARTIFACT_NAMES = (
-    "X_train", "X_test",
-    "W_train", "W_test",
-    "y_train_conv", "y_test_conv",
-    "y_train_visit", "y_test_visit",
-    "row_id_train", "row_id_test",
-    "scaler", "feature_cols",
+    "X_train",
+    "X_test",
+    "W_train",
+    "W_test",
+    "y_train_conv",
+    "y_test_conv",
+    "y_train_visit",
+    "y_test_visit",
+    "row_id_train",
+    "row_id_test",
+    "scaler",
+    "feature_cols",
 )
 
 

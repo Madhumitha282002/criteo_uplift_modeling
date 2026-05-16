@@ -42,8 +42,7 @@ def uplift_at_top_k(
     """
     if not (len(uplift_pred) == len(y) == len(w)):
         raise ValueError(
-            f"Length mismatch: uplift={len(uplift_pred)}, "
-            f"y={len(y)}, w={len(w)}"
+            f"Length mismatch: uplift={len(uplift_pred)}, " f"y={len(y)}, w={len(w)}"
         )
     if not (0 < k_pct <= 1):
         raise ValueError(f"k_pct must be in (0, 1], got {k_pct}")

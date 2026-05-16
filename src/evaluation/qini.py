@@ -49,8 +49,7 @@ def compute_qini_curve(
     """
     if not (len(uplift_pred) == len(y) == len(w)):
         raise ValueError(
-            f"Length mismatch: uplift={len(uplift_pred)}, "
-            f"y={len(y)}, w={len(w)}"
+            f"Length mismatch: uplift={len(uplift_pred)}, " f"y={len(y)}, w={len(w)}"
         )
     if not set(np.unique(w).tolist()).issubset({0, 1}):
         raise ValueError("w must contain only {0, 1}")
